@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>작은 테트리스</title>
+  <style>
+    :root { color-scheme: dark; font-family: system-ui, sans-serif; }
+    body { display: grid; place-items: center; min-height: 100vh; margin: 0; background: #111827; }
+    main { text-align: center; }
+    canvas { display: block; width: 200px; height: 400px; margin: 12px auto; border: 3px solid #374151; background: #030712; }
+    .stats { display: flex; justify-content: space-between; gap: 18px; color: #d1d5db; }
+    button { margin: 4px; padding: 7px 12px; border: 0; border-radius: 6px; cursor: pointer; }
+    small { color: #9ca3af; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>테트리스</h1>
+    <div class="stats"><span>점수 <b id="score">0</b></span><span>줄 <b id="lines">0</b></span></div>
+    <canvas id="game" width="200" height="400" aria-label="테트리스 게임판"></canvas>
+    <button id="pause">일시정지</button><button id="restart">다시 시작</button>
+    <p><small>← → 이동 · ↑ 회전 · ↓ 내리기 · Space 즉시 내리기 · P 일시정지</small></p>
+  </main>
+  <script>
+    const canvas = document.querySelector('#game'), ctx = canvas.getContext('2d');
+    const W = 10, H = 20, S = 20;
+    const pieces = [
+      { c: '#22d3ee', s: [[1,1,1,1]] },
+      { c: '#facc15', s: [[1,1],[1,1]] },
+      { c: '#a78bfa', s: [[0,1,0],[1,1,1]] },
+      { c: '#4ade80', s: [[0,1,1],[1,1,0]] },
+      { c: '#f87171', s: [[1,1,0],[0,1,1]] },
+      { c: '#60a5fa', s: [[1,0,0],[1,1,1]] },
+      { c: '#fb923c', s: [[0,0,1],[1,1,1]] }
+    ];
+    let board, piece, score, lines, paused, over, timer;
+
+    function reset() {
+      board = Array.from({ length: H }, () => Array(W).fill(0));
+      score = lines = 0; paused = over = false; spawn(); restartTimer(); draw();
+    }
+    function spawn() {
+      const p = pieces[Math.floor(Math.random() * pieces.length)];
+      piece = { x: 3, y: 0, c: p.c, s: p.s.map(row => row.slice()) };
+      if (hit()) over = true;
+    }
+    function hit(dx = 0, dy = 0, shape = piece.s) {
+      return shape.some((row, y) => row.some((cell, x) => cell && (
+        piece.x + x + dx < 0 || piece.x + x + dx >= W || piece.y + y + dy >= H ||
+        (piece.y + y + dy >= 0 && board[piece.y + y + dy][piece.x + x + dx])
+      )));
+    }
+    function move(dx) { if (!paused && !over && !hit(dx)) piece.x += dx; draw(); }
+    function drop() {
+      if (paused || over) return;
+      if (!hit(0, 1)) piece.y++;
+      else { merge(); clearLines(); spawn(); }
+      draw();
+    }
+    function hardDrop() { if (!paused && !over) { while (!hit(0, 1)) piece.y++; drop(); } }
+    function rotate() {
+      if (paused || over) return;
+      const rotated = piece.s[0].map((_, i) => piece.s.map(row => row[i]).reverse());
+      const x = piece.x;
+      for (const nudge of [0, -1, 1, -2, 2]) {
+        piece.x = x + nudge;
+        if (!hit(0, 0, rotated)) { piece.s = rotated; draw(); return; }
+      }
+      piece.x = x;
+    }
+    function merge() {
+      piece.s.forEach((row, y) => row.forEach((cell, x) => {
+        if (cell && piece.y + y >= 0) board[piece.y + y][piece.x + x] = piece.c;
+      }));
+    }
+    function clearLines() {
+      let count = 0;
+      for (let y = H - 1; y >= 0; y--) if (board[y].every(Boolean)) {
+        board.splice(y, 1); board.unshift(Array(W).fill(0)); count++; y++;
+      }
+      if (count) { lines += count; score += [0, 100, 300, 500, 800][count] * (1 + Math.floor(lines / 10)); restartTimer(); }
+    }
+    function drawCell(x, y, color) {
+      ctx.fillStyle = color; ctx.fillRect(x * S + 1, y * S + 1, S - 2, S - 2);
+    }
+    function draw() {
+      ctx.fillStyle = '#030712'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+      board.forEach((row, y) => row.forEach((color, x) => color && drawCell(x, y, color)));
+      if (piece) piece.s.forEach((row, y) => row.forEach((cell, x) => cell && drawCell(piece.x + x, piece.y + y, piece.c)));
+      document.querySelector('#score').textContent = score;
+      document.querySelector('#lines').textContent = lines;
+      if (paused || over) {
+        ctx.fillStyle = 'rgba(0,0,0,.7)'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#fff'; ctx.font = 'bold 20px system-ui'; ctx.textAlign = 'center';
+        ctx.fillText(over ? '게임 오버' : '일시정지', canvas.width / 2, canvas.height / 2);
+      }
+    }
+    function restartTimer() { clearInterval(timer); timer = setInterval(drop, Math.max(100, 700 - Math.floor(lines / 10) * 60)); }
+    function togglePause() { if (!over) { paused = !paused; document.querySelector('#pause').textContent = paused ? '계속하기' : '일시정지'; draw(); } }
+    document.addEventListener('keydown', e => {
+      if (['ArrowLeft','ArrowRight','ArrowDown','ArrowUp',' '].includes(e.key)) e.preventDefault();
+      if (e.key === 'ArrowLeft') move(-1); if (e.key === 'ArrowRight') move(1);
+      if (e.key === 'ArrowDown') drop(); if (e.key === 'ArrowUp') rotate();
+      if (e.key === ' ') hardDrop(); if (e.key.toLowerCase() === 'p') togglePause();
+    });
+    document.querySelector('#pause').onclick = togglePause;
+    document.querySelector('#restart').onclick = reset;
+    reset();
+  </script>
+</body>
+</html>
