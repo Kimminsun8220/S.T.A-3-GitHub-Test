@@ -74,7 +74,7 @@ def validate(data):
 
 
 def markdown(data):
-    labels = {'recent': '기본 기간', 'expanded': '30일 내 보충', 'background': '직무 참고', 'undated': '발행일 미확인'}
+    labels = {'recent': f"최신 자료 (최근 {data['days']}일)", 'expanded': f"보충 자료 ({data['days'] + 1}~30일째)" if data['days'] < 30 else '보충 자료 (없음)', 'background': '직무 참고 (30일 초과)', 'undated': '발행일 미확인'}
     start = date.fromisoformat(data['as_of']) - timedelta(days=data['days'] - 1)
     lines = ['# Auto Career Brief 수집 결과', '', f"기준일: {data['as_of']} (한국) · 기본 기간: {start} ~ {data['as_of']} · 모드: {data['mode']}", '',
              '검색·분류·사실 요약 단계입니다. 직무 분석 및 Notion·Slack 전송은 아직 수행하지 않았습니다.', '']
