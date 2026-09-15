@@ -56,7 +56,7 @@ def combine(collection, analyses):
 
 def easy_body(easy):
     labels = [('happened', '🚗 무슨 일이 있었나?'), ('importance', '💡 왜 중요한가?'), ('business', '💼 사업기획이라면?'), ('product', '🚘 상품기획이라면?'), ('data', '📊 어떤 데이터를 볼까?'), ('career', '🎤 취업에 어떻게 활용할까?'), ('action', '🧪 내가 해볼 것')]
-    lines = ['## 👀 3분 요약', '기사에서 확인한 내용과 취업 준비를 위한 생각거리를 담았어요. 직무 관점은 AI의 제안이에요.']
+    lines = []
     for field, label in labels:
         lines += ['### ' + label, easy[field]]
     lines += ['### ✍️ 내 생각을 위한 질문', easy['question'], '아래 내 생각 칸에 의견을 2~3줄로 적어보세요.']
@@ -98,8 +98,7 @@ def render(data):
         lines += [exercise_body(i, 3), '### 아직 알 수 없는 점']
         lines += ['- ' + x for x in i['limitations']]
         if 'easy_read' in i:
-            detailed = '\n'.join(lines[article_start + 2:])
-            lines[article_start:] = [f"## {item['title']}", i['planning']['summary'], easy_body(i['easy_read']), fold_details(detailed)]
+            lines[article_start:] = [f"## {item['title']}", i['planning']['summary'], easy_body(i['easy_read'])]
         lines += ['### 내 생각 · 직접 작성', '', '### 실습 결과 · 직접 작성', '', '### 출처', f"[{item['source']}]({item['url']})", f"발행일: {item['published_date']} · 자료 구분: {item['freshness']}", '']
     return '\n'.join(lines + ['## 원본 연결', data['source_collection'], data['source_collection_sha256'], '외부 저장 여부는 별도 전송 기록을 확인합니다.']) + '\n'
 
