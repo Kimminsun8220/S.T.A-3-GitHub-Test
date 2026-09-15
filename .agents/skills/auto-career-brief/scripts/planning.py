@@ -25,7 +25,7 @@ def combine(collection, analyses):
         if easy is not None:
             strings(easy, ('happened', 'importance', 'business', 'product', 'data', 'action', 'career', 'question'))
             if sum(len(v) for v in easy.values()) > 1800:
-                raise ValueError('3분 요약은 전체 1800자 이내로 작성하세요.')
+                raise ValueError('쉬운 기사 분석은 전체 1800자 이내로 작성하세요.')
             readings[insight.canonical_url(row['url'])] = easy
         p = row.pop('planning', None)
         if not isinstance(p, dict) or set(p) != {'summary', 'comparison', 'hypothesis', 'decisions', 'roles'}:
@@ -55,10 +55,12 @@ def combine(collection, analyses):
     return result
 
 def easy_body(easy):
-    labels = [('happened', '🚗 무슨 일이 있었나?'), ('importance', '💡 왜 중요한가?'), ('business', '💼 사업기획이라면?'), ('product', '🚘 상품기획이라면?'), ('data', '📊 어떤 데이터를 볼까?'), ('career', '🎤 취업에 어떻게 활용할까?'), ('action', '🧪 내가 해볼 것')]
+    labels = [('happened', '🚗 무슨 일이 있었나?'), ('importance', '💡 왜 중요한가?'), ('business', '💼 사업기획 관점'), ('product', '🚘 상품기획 관점'), ('data', '📊 어떤 데이터를 볼까?'), ('career', '🎤 취업에 어떻게 활용할까?'), ('action', '🧪 내가 해볼 것')]
     lines = []
     for field, label in labels:
         lines += ['### ' + label, easy[field]]
+        if field == 'product':
+            lines += ['두 직무 관점은 기사에 기반한 AI의 실무 해석입니다. 별도 출처를 명시한 인용 외에는 실제 현업자 발언이나 기업 내부 판단이 아닙니다.']
     lines += ['### ✍️ 내 생각을 위한 질문', easy['question'], '아래 내 생각 칸에 의견을 2~3줄로 적어보세요.']
     return '\n'.join(lines) + '\n'
 
